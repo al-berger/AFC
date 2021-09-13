@@ -1,6 +1,8 @@
-/* Scriptable Audio Language Trainer
- * Scriptable Audio Fragmenter and Combiner
- * Audio Splitter and Combiner
+/* 
+ * Audio Flow Combiner
+ *
+ * Author: Albert Berger [alberger@gmail.com]
+ * Github: https://github.com/al-berger/AFC
 */
 #lang transd
 

@@ -29,7 +29,7 @@ A play definition contains parameters of the fragment's playback and audio effec
 
 An example of a configuration file with a definition of a flow containing one stream, no fragment repetitions and minimal audio effects:
 
-'''
+```
 "play1": {
   class: "Play",
   volume: 0.5,
@@ -56,6 +56,6 @@ An example of a configuration file with a definition of a flow containing one st
   class: "Flow",
   streams: ["stream1"],
 }
-'''
+```
 
 This flow will consist of 5 min fragments, played every 30 min.
