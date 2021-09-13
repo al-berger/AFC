@@ -1,0 +1,149 @@
+/* Scriptable Audio Language Trainer
+ * Scriptable Audio Fragmenter and Combiner
+ * Audio Splitter and Combiner
+*/
+#lang transd
+
+Require : { searchDirs: ["."], packages: ["config"] }
+
+class Play: {
+  volume: Double(0.5),
+  speed: Double(1.0),
+  tempo: Double(1.0),
+  fadeIn: Double(0.0),
+  fadeOut: Double(0.0),
+
+  init: (λ objs Index<String Vector<Object>>()
+  ),
+
+  play: (λ fileName String() startPos Double() thr_done Bool() 
+            length Double()
+    (with cmd String("sox -q " fileName
+            " -d trim " startPos " " length " tempo " tempo 
+            " fade t " fadeIn " -0 " fadeOut " vol " volume)
+        //(lout cmd)
+        (start-process cmd thr_done)
+    )
+  )
+}
+
+class Fragment: {
+  length: Double(0.0),
+  pause: Double(0.0),
+  plays: Vector<String>(),
+  playObjs: Vector<Play>(),
+
+  init: (λ objs Index<String Vector<Object>>()
+    (for plname in plays do
+        (append playObjs Play())
+        (load-from-object (back playObjs) (get (snd (get objs plname)) 0))
+    )
+  ),
+
+  play: (λ fileName String() startPos Double() thr_done Bool()
+    (for pl in playObjs do 
+        (play pl fileName startPos thr_done length)
+        (while (not thr_done)
+           (sleep 1000))
+        (if (< @idx (- (size playObjs) 1))
+            (sleep pause))
+    )
+  )
+}
+
+class Stream: {
+  rootDir: String(),
+  filePatt: String(),
+  fragOverlap: Double(0.0),
+  startPos: Double(0.0),
+  fragment: String(),
+  freq: Int(1),
+
+  files: Vector<String>(),
+  curFile: String(),
+  curFileIdx: Int(-1),
+  curFileLen: Double(-1.0),
+  fragObj: Fragment(),
+
+  init: (λ objs Index<String Vector<Object>>()
+    (with dir Directory() 
+        (read dir rootDir filePatt)
+        (= files (files dir)))
+    (if (size files) 
+        (= curFile (get files 0))
+        (load-from-object fragObj (get (snd (get objs fragment)) 0))
+        (init fragObj objs))
+  ),
+
+  play: (λ thr_done Bool()
+    (if (> startPos curFileLen) 
+        (if (< curFileIdx (- (size files) 1))
+            (= curFile (get files curFileIdx))
+            (+= curFileIdx 1)
+            (= curFileLen -1.0)
+        else (= curFileLen 0.0)
+            (= curFile "")
+            (= startPos 0.0)
+    ))
+    (if (not curFile) (ret))
+    (if (< curFileLen 0.0)
+        (with cmd String("sox " curFile " -n stat 2>&1")
+            outp String() _done Bool(false) slen ""
+            (start-process cmd _done outp)
+            (while (not _done)
+                (sleep 1000))
+            (= slen (substr outp after: "):" before: "\nScaled"))
+            (= curFileLen Double(slen))
+            (= startPos 0.0)
+    ))
+    (play fragObj curFile startPos thr_done)
+  )
+}
+
+class Flow: {
+  streams: Vector<String>(),
+  async: Bool(false),
+  delays: Vector<Double>(),
+  fragOverlap: Double(0.0),
+
+  thr_done: Bool( false ),
+  streamObjs: Vector<Stream>(),
+
+  init: (λ objs Index<String Vector<Object>>()
+    (for streamName in streams do
+        (append streamObjs Stream())
+        (load-from-object (back streamObjs) 
+                (get (snd (get objs streamName)) 0))
+        (init (back streamObjs) objs)
+    )
+  ),
+
+  play: (λ 
+    (for st in streamObjs do 
+        (play st thr_done)
+        (while (not thr_done)
+           (sleep 1000))
+            (sleep (get delays @idx))
+    )
+  )
+}
+
+MainModule: {
+import: "Config",
+
+flowObj: Flow(),
+objs: Index<String Vector<Object>>(),
+flowName: "flow1",
+
+_start: (λ fname String() cmd String()
+    (if (> @numArgs 1) (set flowName (get @progArgs 0)))
+    (rebind objs (group-by 
+                (read-tsd-file PLFile) 
+                (λ ob Object() -> String() 
+                    (get-String ob "name"))))
+    (load-from-object flowObj (get (snd (get objs flowName)) 0))
+    (init flowObj objs)
+    (play flowObj)
+)
+
+}
