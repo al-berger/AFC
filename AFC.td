@@ -9,6 +9,7 @@
 Require : { searchDirs: ["."], packages: ["config"] }
 
 class Play: {
+  import: "Config::soxPath",
   volume: Double(0.5),
   speed: Double(1.0),
   tempo: Double(1.0),
@@ -20,7 +21,7 @@ class Play: {
 
   play: (λ fileName String() startPos Double() thr_done Bool() 
             length Double()
-    (with cmd String("sox -q " fileName
+    (with cmd String( soxPath " -q " fileName
             " -d trim " startPos " " length " tempo " tempo 
             " fade t " fadeIn " -0 " fadeOut " vol " volume)
         //(lout cmd)
@@ -40,6 +41,7 @@ class Fragment: {
         (append playObjs Play())
         (load-from-object (back playObjs) (get (snd (get objs plname)) 0))
     )
+    (*= pause 1000.0)
   ),
 
   play: (λ fileName String() startPos Double() thr_done Bool()
@@ -48,6 +50,7 @@ class Fragment: {
         (while (not thr_done)
            (sleep 1000))
         (if (< @idx (- (size playObjs) 1))
+(lout "sleep between fragments: " pause " sec")
             (sleep pause))
     )
   )
@@ -60,6 +63,8 @@ class Stream: {
   startPos: Double(0.0),
   fragment: String(),
   freq: Int(1),
+  fragOverlap: Double(0.0),
+  loop: Int(0),
 
   files: Vector<String>(),
   curFile: String(),
@@ -106,7 +111,6 @@ class Flow: {
   streams: Vector<String>(),
   async: Bool(false),
   delays: Vector<Double>(),
-  fragOverlap: Double(0.0),
 
   thr_done: Bool( false ),
   streamObjs: Vector<Stream>(),
@@ -135,12 +139,13 @@ import: "Config",
 
 flowObj: Flow(),
 objs: Index<String Vector<Object>>(),
-flowName: "flow1",
+flowName: "",
 
 _start: (λ fname String() cmd String()
-    (if (> @numArgs 1) (set flowName (get @progArgs 0)))
+    (if (> @numArgs 1) (set flowName (get @progArgs 0))
+    else (set flowName defaultFlow))
     (rebind objs (group-by 
-                (read-tsd-file PLFile) 
+                (read-tsd-file FLfile) 
                 (λ ob Object() -> String() 
                     (get-String ob "name"))))
     (load-from-object flowObj (get (snd (get objs flowName)) 0))

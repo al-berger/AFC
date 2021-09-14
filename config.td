@@ -2,13 +2,17 @@
 
 
 
-public module Config: {
-
-    PLFile: String(),
+public module Config: 
+{
+    soxPath: "sox",
     defaultFlow: "flow1",
+
+    FLfile: String(),
+
     @init: (λ 
-        (with rootdir (substr @sourceFile from: 0 to: after: last: "/")
-            (= PLFile (+ rootdir "flow.tsd"))
-        )
+        (if (not FLfile)
+            (with rootdir (substr @sourceFile from: 0 to: after: last: "/")
+                (= FLfile (+ rootdir "flowlist.tsd"))
+        ))
     )
 }
