@@ -84,7 +84,7 @@ frend "AFC.td" <flow_name>
 
 Flows are defined in flowlist files (by analogy with "playlists"). A flow and its subparts describe which audio files will be played and various parameters of how they will be played.
 
-A flow can be though of as an object made up of smaller objects. To define a flow is to define all the required objects in its structure.
+A flow can be thought of as an object made up of smaller objects. To define a flow is to define all the required objects in its structure.
 
 An object definition is a list of parameters, relevant to the object's type. Some parameters are necessary for all types of objects. These parameters are: the object's name and the class of the object. A definition of one object looks like this:
 
@@ -117,7 +117,7 @@ A _list_ is a comma separated sequence of values enclosed in square brackets:
 streams: ["Rock", "Pop", "Jazz"]
 ```
 
-Below is the list of classes, whose objects should be defined to create a flow. Parameters with default values are optional: if the parameter is not defined, the default value will be used. Default values are indicated `(default: <value>)` Parameters without default values are necessary and marked `(required)`.
+Below is the list of classes, whose objects should be defined to create a flow. Parameters with default values are optional: if the parameter is not defined, the default value will be used. Default values are indicated "(_default_: `<value>`)" Parameters without default values are necessary and marked "(_required_)".
 
 ### Class "Flow"
 
@@ -125,13 +125,59 @@ A top class representing the whole flow.
 
 Parameters:
 
-**streams**: (required) a list of names of stream objects, which compose the flow. The stream objects must be defined in the same file. The number of streams can be from 1 to 10. Example:
+**streams**: (_required_) a list of names of Stream objects, which compose the flow. The Stream objects must be defined in the same file. The number of streams can be from 1 to 10. Example:
 
 ```
-streams: ["Rock", "Pop", "Jazz"]
+streams: ["Speech", "Music"]
 ```
 
-Streams are played in a round-robin fashion, e.g. streams A, B and C will be played in the following sequence: `A_B_C_A_B_C_A_B_C...`. Each stream is played until its end, and restarts or not depending on the stream's `loop` parameter.
+Streams are played in a round-robin fashion, e.g. streams A, B and C will be played in the following sequence: `A_B_C_A_B_C_A_B_C...`. Each stream is played until its end, and restarts or not depending on the stream's `loop` parameter. 
 
-**delays**: (default: 0) The amount of silence (in seconds) between playing streams.
+One playing iteration through all the streams is called a _cycle_. Streams can skip cycles. Streams have the `freq` (frequency) parameter that defines how frequent they are played in the flow. The `freq`'s value "1" means that the stream will be played in every cycle, "2" - in every second cycle, etc. For example, if a flow is composed of a stream A with frequency "1", and a stream B with frequency "2", it will be played like this:
+
+```
+A A B A A B A A B ...
+```
+
+**delays**: (_default_: `[0]`) a list of times (in seconds) defining how long is the silence between playing streams. The number of delays must be the same as the number of streams. Each delay ѕpecifies the pause between the stream with the same index in the list and the next one.
+
+
+Example of a flow object:
+
+```
+"reading" : {
+  class: "Flow",
+  streams: ["Audiobook", "Ambient"],
+  delays: [0, 30]
+}
+```
+In this flow, the "Ambient" stream will be played immediately after the "Audiobook", and "Audiobook" will start again in 30 seconds after the "Ambient" has ended.
+
+### Class "Stream"
+
+A class representing a playing sequence. A stream object has an audio file name (or a file name pattern for several files), a definition of a fragment, and it plays the files by fragments in succession. A flow can be composed of more than one stream, in which case the flow will cycle through the streams playing one fragment of each stream at a time. Streams can be configured to skip cycles, thus creating more complex patterns of playing sequence.
+
+Parameters:
+
+**rootDir**: (_required_) The directory relative to which the audio file names are specified. For example if this parameter is `C:/Music` and the audio file name is `song.ogg`, then a file with the full path `C:/Music/song.ogg` will be searched for.
+
+**filePatt**: (_default_: `.*`) A regular expression defining the names of files under the root directory that will be included in the stream. The default value of this parameter will include into the stream all files in all subdirectories under the root directory.
+
+Examples:
+
+`"Nineth symphony.mp3"` - includes a single file;
+`"Jane Austine/Emma/.*"` - includes all files in a subdirectory;
+`"Classic/.*Adagio.*"` - includes files with "Adagio" in names from a "Classic" subdirectory.
+
+**fragment**: (_required_) the name of a Fragment object describing the way in which the playback of audio files should be fragmented. The Fragment object should be defined in the same flowlist file.
+
+**startPos**: (_default_: `0`) The time position (in seconds) from which the playback of each file in the stream will start.
+_Possible values_: non-negative integers (N >= 0).
+
+**freq**: (_default_: `1`) A number specifying how frequently the stream will appear in the flow. The flow playbacks streams in the successive order by iterating over them in cycles.The value "1" of this parameter means that the stream will be played in each cycle of the flow, the value "2" will cause the stream to be only played in every second cycle, etc.
+_Possible values_: non-negative integers (N >= 0).
+
+**loop**: (_default_: `0`) A boolean value determining whether or not the stream will be restarted when it reaches the end.
+_Possible values_: 0, 1.
+
 
