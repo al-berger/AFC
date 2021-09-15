@@ -1,5 +1,11 @@
 # Audio Flow Combiner
 
+##Table of contents
+* [Introduction](#introduction)
+* [Audio flow](#audio-flow)
+* [Dependencies](#dependencies)
+* [Running AFC](#running-afc)
+* [Flow configuration](#flow-configuration)
 
 ## Introduction
 
@@ -139,7 +145,7 @@ One playing iteration through all the streams is called a _cycle_. Streams can s
 A A B A A B A A B ...
 ```
 
-**delays**: (_default_: `[0]`) a list of times (in seconds) defining how long is the silence between playing streams. The number of delays must be the same as the number of streams. Each delay ѕpecifies the pause between the stream with the same index in the list and the next one.
+**delays**: (_default_: `[0]`) a list of times (in seconds) defining how long should be the silence between playing streams. The number of delays must be the same as the number of streams. Each delay ѕpecifies the pause between the stream with the same index in the list and the next one.
 
 
 Example of a flow object:
@@ -151,7 +157,7 @@ Example of a flow object:
   delays: [0, 30]
 }
 ```
-In this flow, the "Ambient" stream will be played immediately after the "Audiobook", and "Audiobook" will start again in 30 seconds after the "Ambient" has ended.
+In this flow, the "Ambient" stream will be played immediately after the "Audiobook", and the next fragment of "Audiobook" will start in 30 seconds after the "Ambient" fragment has ended.
 
 ### Class "Stream"
 
@@ -165,9 +171,9 @@ Parameters:
 
 Examples:
 
-`"Nineth symphony.mp3"` - includes a single file;
-`"Jane Austine/Emma/.*"` - includes all files in a subdirectory;
-`"Classic/.*Adagio.*"` - includes files with "Adagio" in names from a "Classic" subdirectory.
+`"Nineth symphony.mp3"` - includes a single file;<br>
+`"Jane Austine/Emma/.*"` - includes all files in a subdirectory;<br>
+`"Classic/.*Adagio.*"` - includes files with "Adagio" in names from a "Classic" subdirectory.<br>
 
 **fragment**: (_required_) the name of a Fragment object describing the way in which the playback of audio files should be fragmented. The Fragment object should be defined in the same flowlist file.
 
@@ -180,4 +186,15 @@ _Possible values_: non-negative integers (N >= 0).
 **loop**: (_default_: `0`) A boolean value determining whether or not the stream will be restarted when it reaches the end.
 _Possible values_: 0, 1.
 
+An example of a stream object definition:
 
+```
+"Spanish" : {
+  rootDir: "D:/Podcasts/Learning Spanish",
+  filePatt: ".*\.mp3",
+  startPos: 60,
+  fragment: "podcasts",
+  freq: 1,
+  loop: 0
+}
+```
