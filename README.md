@@ -1,6 +1,6 @@
 # Audio Flow Combiner
 
-##Table of contents
+## Table of contents
 * [Introduction](#introduction)
 * [Audio flow](#audio-flow)
 * [Dependencies](#dependencies)
@@ -52,7 +52,7 @@ An example of a configuration file with a definition of a flow containing one st
   class: "Stream",
   rootDir: "D:/Bach/",
   filePatt: ".\*Cello Suite.\*",
-  fragOverlap: 5,
+  fragGap: 5,
   fragment: "frag1",
 }
 
@@ -177,24 +177,101 @@ Examples:
 
 **fragment**: (_required_) the name of a Fragment object describing the way in which the playback of audio files should be fragmented. The Fragment object should be defined in the same flowlist file.
 
+_Possible values_: a string value with a name of one fragment object.
+
 **startPos**: (_default_: `0`) The time position (in seconds) from which the playback of each file in the stream will start.
 _Possible values_: non-negative integers (N >= 0).
 
 **freq**: (_default_: `1`) A number specifying how frequently the stream will appear in the flow. The flow playbacks streams in the successive order by iterating over them in cycles.The value "1" of this parameter means that the stream will be played in each cycle of the flow, the value "2" will cause the stream to be only played in every second cycle, etc.
+
 _Possible values_: non-negative integers (N >= 0).
 
 **loop**: (_default_: `0`) A boolean value determining whether or not the stream will be restarted when it reaches the end.
+
 _Possible values_: 0, 1.
 
-An example of a stream object definition:
+An example of a Stream object definition:
 
 ```
 "Spanish" : {
+  class: "Stream",
   rootDir: "D:/Podcasts/Learning Spanish",
   filePatt: ".*\.mp3",
   startPos: 60,
   fragment: "podcasts",
   freq: 1,
   loop: 0
+}
+```
+
+### Class "Fragment"
+
+A class describing how a stream should be divided into fragments. Also, this class contains the "Play" objects, which will be used for playing fragments.
+
+Parameters:
+
+**length**: (_required_) The length in seconds of a single fragment.
+
+_Possible values_: integer from 1 to 10000.
+
+**pause**: (_required_) The length in seconds of the pause (silence) between consequtive playings of one fragment. This parameter only applies when the "play" parameter of this class contains more than one Play objects.
+
+_Possible values_: integer from 1 to 10000.
+
+**fragGap**: (_default_: `0`) This parameter specifies the positioning of fragments withing the audio file relative to each other. If this parameter is `0`, each fragment starts from the position in the file at which the previous fragment ended. Negative values mean that fragments will overlap, positive - that there will be gaps (skipped file content) between consequtive fragments.
+
+_Possible values_: positive or negative integers, or `0`. Negative numbers should be strictly less in absolute value than the "length" parameter of this class.
+
+**plays**: (_optional_) The list of Play objects describing how this fragment should be played at each flow cycle. The number of objects in this list determines the number of times the fragment will be played at each cycle. The successive plays (if more than one) are separated by the pause, whose length is defined by the "pause" parameter.
+
+This parameter is optional. If it's not provided, then each fragment in the stream will be played once, without effects, with volume `0.5`.
+
+_Possible values_: from 1 to 10000.
+
+An example of a Fragment object definition:
+
+```
+"skim" : {
+  class: "Fragment",
+  length: 10,
+  pause: 1,
+  fragGap: 300,
+  plays: ["play1"]
+}
+```
+
+### Class "Play"
+
+This class defines the way in which each fragment of a stream is played in the flow. It defines the playback volume level and some audio effects that can be applied during the fragment's playback. A fragment can have several Play objects in its definition, in which case it will be played at each cycle the same number of times as the number of objects.
+
+Parameters:
+
+**volume**: (_default_: `0.5`) A floating point number, specifying the volume level of playback.
+
+_Possible values_: positive floating point number from 0.0 to 1.0.
+
+**tempo**: (_default_: `1.0`) A floating point number, specifying the speed at which an audio fragment will be played.
+
+_Possible values_: positive floating point number from 0.0 to 1.0.
+
+**fadeIn**: (_default_: 0) A number of seconds, which will take for an audio fragment to "fade in". "Fade in" effect means that playback of the fragment starts with zero volume, and in the course of the "fadeIn" interval the volume gradually increases from zero to the normal level.
+
+_Possible values_: non-negative integer.
+
+**fadeOut**: (_default_: 0) A number of seconds, which will take for an audio fragment to "fade out". "Fade out" effect means that playback of the fragment ends with gradual decreasing of the volume level to zero.
+
+_Possible values_: non-negative integer.
+
+In the future, some more effects will be added.
+
+An example of a Play object definition:
+
+```
+"slow" : {
+  class: "Play",
+  volume: 0.5,
+  tempo: 0.75,
+  fadeIn: 3,
+  fadeOut: 5
 }
 ```

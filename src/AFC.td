@@ -6,12 +6,11 @@
 */
 #lang transd
 
-Require : { searchDirs: ["."], packages: ["config"] }
+Require : { searchDirs: ["."], packages: ["config", "utils"] }
 
 class Play: {
   import: "Config::soxPath",
   volume: Double(0.5),
-  speed: Double(1.0),
   tempo: Double(1.0),
   fadeIn: Double(0.0),
   fadeOut: Double(0.0),
@@ -21,10 +20,10 @@ class Play: {
 
   play: (λ fileName String() startPos Double() thr_done Bool() 
             length Double()
-    (with cmd String( soxPath " -q " fileName
-            " -d trim " startPos " " length " tempo " tempo 
+    (with cmd String( soxPath " -q \"" fileName
+            "\" -d trim " startPos " " length " tempo " tempo 
             " fade t " fadeIn " -0 " fadeOut " vol " volume)
-        //(lout cmd)
+        (lout cmd)
         (start-process cmd thr_done)
     )
   )
@@ -33,7 +32,9 @@ class Play: {
 class Fragment: {
   length: Double(0.0),
   pause: Double(0.0),
+  fragGap: Double(0.0),
   plays: Vector<String>(),
+
   playObjs: Vector<Play>(),
 
   init: (λ objs Index<String Vector<Object>>()
@@ -50,20 +51,19 @@ class Fragment: {
         (while (not thr_done)
            (sleep 1000))
         (if (< @idx (- (size playObjs) 1))
-(lout "sleep between fragments: " pause " sec")
+//;w(lout "sleep between fragments: " pause " sec")
             (sleep pause))
     )
   )
 }
 
 class Stream: {
+  import: "Utils",
   rootDir: String(),
   filePatt: String(),
-  fragOverlap: Double(0.0),
   startPos: Double(0.0),
   fragment: String(),
   freq: Int(1),
-  fragOverlap: Double(0.0),
   loop: Int(0),
 
   files: Vector<String>(),
@@ -94,15 +94,9 @@ class Stream: {
     ))
     (if (not curFile) (ret))
     (if (< curFileLen 0.0)
-        (with cmd String("sox " curFile " -n stat 2>&1")
-            outp String() _done Bool(false) slen ""
-            (start-process cmd _done outp)
-            (while (not _done)
-                (sleep 1000))
-            (= slen (substr outp after: "):" before: "\nScaled"))
-            (= curFileLen Double(slen))
-            (= startPos 0.0)
-    ))
+        (= curFileLen (get-file-len curFile))
+        (= startPos 0.0)
+    )
     (play fragObj curFile startPos thr_done)
   )
 }
