@@ -6,6 +6,10 @@
 * [Dependencies](#dependencies)
 * [Running AFC](#running-afc)
 * [Flow configuration](#flow-configuration)
+  - [Class "Flow"](#class-flow)
+  - [Class "Stream"](#class-stream)
+  - [Class "Fragment"](#class-fragment)
+  - [Class "Play"](#class-play)
 
 ## Introduction
 
@@ -75,7 +79,7 @@ This flow will consist of 5 min fragments, played every 30 min.
 Once you have defined the details of your audio flow in a flowlist file, you can start to play it. To play the flow, type the following command on the command line:
 
 ```
-frend "AFC.td"
+frend <full/path/to>/"AFC.td"
 ```
 
 `frend` - is the name of the FREND interpreter's executable file, `"AFC.td"` - is a program file from this distribution. If directories with these files are not in the system PATH list, the file names need to be typed with the full paths.
@@ -83,7 +87,7 @@ frend "AFC.td"
 The above command will start the flow that has the default name in the flowlist file. To start a flow with other name, the command should be typed as follows:
 
 ```
-frend "AFC.td" <flow_name>
+frend <full/path/to>/ "AFC.td" <flow_name>
 ```
 
 ## Flow configuration
@@ -275,3 +279,5 @@ An example of a Play object definition:
   fadeOut: 5
 }
 ```
+
+Any bugs and issues can be reported [here](https://github.com/al-berger/AFC/issues).

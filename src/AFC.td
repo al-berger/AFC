@@ -1,7 +1,7 @@
 /* 
  * Audio Flow Combiner
- *
- * Author: Albert Berger [alberger@gmail.com]
+ * ---------------------
+ * Author: Albert Berger [/com/gmail/alberger]
  * Github: https://github.com/al-berger/AFC
 */
 #lang transd
@@ -9,6 +9,7 @@
 Require : { searchDirs: ["."], packages: ["config", "utils"] }
 
 class Play: {
+  import: "Utils",
   import: "Config::soxPath",
   volume: Double(0.5),
   tempo: Double(1.0),
@@ -20,16 +21,18 @@ class Play: {
 
   play: (λ fileName String() startPos Double() thr_done Bool() 
             length Double()
+    (log-debug "Play " name " started playing ")
     (with cmd String( soxPath " -q \"" fileName
             "\" -d trim " startPos " " length " tempo " tempo 
             " fade t " fadeIn " -0 " fadeOut " vol " volume)
-        (lout cmd)
+        (log-debug "cmd: " cmd)
         (start-process cmd thr_done)
     )
   )
 }
 
 class Fragment: {
+  import: "Utils",
   length: Double(0.0),
   pause: Double(0.0),
   fragGap: Double(0.0),
@@ -46,14 +49,18 @@ class Fragment: {
   ),
 
   play: (λ fileName String() startPos Double() thr_done Bool()
+    (log-debug "Fragment " name " started playing ")
     (for pl in playObjs do 
         (play pl fileName startPos thr_done length)
         (while (not thr_done)
            (sleep 1000))
         (if (< @idx (- (size playObjs) 1))
 //;w(lout "sleep between fragments: " pause " sec")
-            (sleep pause))
+            (sleep pause)
+            (= thr_done false)
+        )
     )
+    (+= startPos length)
   )
 }
 
@@ -71,18 +78,26 @@ class Stream: {
   curFileIdx: Int(-1),
   curFileLen: Double(-1.0),
   fragObj: Fragment(),
+  finished: false,
+
+    access allow: { finished: [Flow], name: [Flow] },
 
   init: (λ objs Index<String Vector<Object>>()
     (with dir Directory() 
-        (read dir rootDir filePatt)
+        (read-rec dir rootDir filePatt)
         (= files (files dir)))
     (if (size files) 
         (= curFile (get files 0))
         (load-from-object fragObj (get (snd (get objs fragment)) 0))
-        (init fragObj objs))
+        (init fragObj objs)
+        (log-debug "Stream files: " name String(files))
+    else
+        (log-debug "Stream " name " doesn't have any files")
+    )
   ),
 
   play: (λ thr_done Bool()
+    (log-debug "Stream " name " started playing ")
     (if (> startPos curFileLen) 
         (if (< curFileIdx (- (size files) 1))
             (= curFile (get files curFileIdx))
@@ -92,7 +107,10 @@ class Stream: {
             (= curFile "")
             (= startPos 0.0)
     ))
-    (if (not curFile) (ret))
+    (if (not curFile)
+        (log-debug name " finished")
+        (= finished true) (= thr_done true) (ret)
+    )
     (if (< curFileLen 0.0)
         (= curFileLen (get-file-len curFile))
         (= startPos 0.0)
@@ -102,6 +120,8 @@ class Stream: {
 }
 
 class Flow: {
+import: "Utils",
+import: "Stream",
   streams: Vector<String>(),
   async: Bool(false),
   delays: Vector<Double>(),
@@ -119,23 +139,38 @@ class Flow: {
   ),
 
   play: (λ 
-    (for st in streamObjs do 
-        (play st thr_done)
-        (while (not thr_done)
-           (sleep 1000))
-            (sleep (get delays @idx))
+    active Bool(true)
+(log-debug "flow started")
+    (while active
+        (= active false)
+        (for st in streamObjs do 
+(log-debug "flow: starting next stream: " st.name)
+            (if (not st.finished)
+                (= active true)
+                (= thr_done false)
+                (play st thr_done)
+                (while (not thr_done)
+                    (sleep 1000))
+(log-debug "flow: THR_DONE is SET")
+                    (sleep (get delays @idx))
+            )
+(log-debug "flow: stream's cycle ended " st.name)
+        )
     )
+(log-debug "flow: no active streams. Exiting.")
   )
 }
 
 MainModule: {
 import: "Config",
+import: "Utils",
 
 flowObj: Flow(),
 objs: Index<String Vector<Object>>(),
 flowName: "",
 
 _start: (λ fname String() cmd String()
+(log-debug "prog started")
     (if (> @numArgs 1) (set flowName (get @progArgs 0))
     else (set flowName defaultFlow))
     (rebind objs (group-by 
