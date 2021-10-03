@@ -1,9 +1,34 @@
-/* 
- * Audio Flow Combiner
- * ---------------------
- * Author: Albert Berger [/com/gmail/alberger]
- * Github: https://github.com/al-berger/AFC
+/*
+Audio Flow Combiner
+---------------------
+
+MIT License
+
+Copyright (c) 2021 Albert Berger
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------
+Author: Albert Berger [/com/gmail/alberger]
+Github: https://github.com/al-berger/AFC
 */
+
 #lang transd
 
 Require : { searchDirs: ["."], packages: ["config", "utils"] }
@@ -55,7 +80,7 @@ class Fragment: {
         (while (not thr_done)
            (sleep 1000))
         (if (< @idx (- (size playObjs) 1))
-//;w(lout "sleep between fragments: " pause " sec")
+            (log-debug String("Fragment: " name " sleeping between plays: " pause ))
             (sleep pause)
             (= thr_done false)
         )
@@ -75,7 +100,7 @@ class Stream: {
 
   files: Vector<String>(),
   curFile: String(),
-  curFileIdx: Int(-1),
+  curFileIdx: Int(0),
   curFileLen: Double(-1.0),
   fragObj: Fragment(),
   finished: false,
@@ -90,7 +115,7 @@ class Stream: {
         (= curFile (get files 0))
         (load-from-object fragObj (get (snd (get objs fragment)) 0))
         (init fragObj objs)
-        (log-debug "Stream files: " name String(files))
+        (log-info String("Stream " name ": file list:" files))
     else
         (log-debug "Stream " name " doesn't have any files")
     )
@@ -98,9 +123,13 @@ class Stream: {
 
   play: (λ thr_done Bool()
     (log-debug "Stream " name " started playing ")
+    (log-debug "   startPos: " String( startPos "; curFileLen: " curFileLen ))
     (if (> startPos curFileLen) 
-        (if (< curFileIdx (- (size files) 1))
+        (log-debug "   startPos > curFileLen: " 
+            String( startPos "; " curFileLen "; curFileIdx: " curFileIdx ))
+        (if (< curFileIdx (size files) )
             (= curFile (get files curFileIdx))
+            (log-info String("Stream " name ": current file: " curFile ))
             (+= curFileIdx 1)
             (= curFileLen -1.0)
         else (= curFileLen 0.0)
@@ -108,13 +137,14 @@ class Stream: {
             (= startPos 0.0)
     ))
     (if (not curFile)
-        (log-debug name " finished")
+        (log-info "The stream " name " has finished")
         (= finished true) (= thr_done true) (ret)
     )
     (if (< curFileLen 0.0)
         (= curFileLen (get-file-len curFile))
         (= startPos 0.0)
     )
+    (log-debug "   curFile: " curFile String( "; startPos: " startPos ))
     (play fragObj curFile startPos thr_done)
   )
 }
@@ -140,24 +170,25 @@ import: "Stream",
 
   play: (λ 
     active Bool(true)
-(log-debug "flow started")
+    (log-debug "flow started")
     (while active
         (= active false)
         (for st in streamObjs do 
-(log-debug "flow: starting next stream: " st.name)
+            (log-debug "flow: starting next stream: " st.name)
             (if (not st.finished)
                 (= active true)
                 (= thr_done false)
                 (play st thr_done)
                 (while (not thr_done)
                     (sleep 1000))
-(log-debug "flow: THR_DONE is SET")
-                    (sleep (get delays @idx))
+                (log-debug "flow: THR_DONE is SET")
+                (log-debug String( "flow: began pause: " (get delays @idx)) )
+                (sleep (* (get delays @idx) 1000.0))
             )
-(log-debug "flow: stream's cycle ended " st.name)
+            (log-debug "flow: stream's cycle ended " st.name)
         )
     )
-(log-debug "flow: no active streams. Exiting.")
+    (log-info "Flow: " name " has no active streams. Exiting.")
   )
 }
 
@@ -170,7 +201,7 @@ objs: Index<String Vector<Object>>(),
 flowName: "",
 
 _start: (λ fname String() cmd String()
-(log-debug "prog started")
+    (log-debug "AFC started")
     (if (> @numArgs 1) (set flowName (get @progArgs 0))
     else (set flowName defaultFlow))
     (rebind objs (group-by 

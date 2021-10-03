@@ -26,7 +26,7 @@ public module Config:
     FLfile: "",
 
     // Three levels of verbosity: error=1, info=2, debug=3
-    verbosity: 1,
+    verbosity: 3,
 
     // -- End of the editable part of the Config module -- //
     // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -35,7 +35,7 @@ public module Config:
         (if (not FLfile)
             (with rootdir (substr @sourceFile from: 0 to: after: last: "/")
                 _s (if (eq @OS_Type "Windows") "../flowlists/flowlist.tsd" 
-                    else "../flowlists/flowlistl.tsd")
+                    else "../flowlists/lo_and_fo_l.tsd")
                 (= FLfile (+ rootdir _s))
         ))
     )
