@@ -26,7 +26,6 @@ public module Utils:
             cmd String( soxPath " \"" fname 
                     "\" -d trim 0.00 0.1 vol 0.0 2>&1" )
             outp String() _done Bool(false) ret 0.0
-    (lout "get-file-len: RET: " ret "; outp: " outp)
             (start-process cmd _done outp)
             (while (not _done)
                 (sleep 1000))
@@ -34,12 +33,23 @@ public module Utils:
             (= outp (substr outp from: after: "Duration: " to: "."))
             (log-debug "get-file-len: " outp)
             (with v (split outp ":")
-    (lout "get-file-len: v: " v)
-                (+= ret (* 3600 Int((get v 0))) 
+                (+= ret (* 3600 Int((get v 0)))
                         (* 60 Int((get v 1)))
                         Int((get v 2)))
             )
             (log-debug String( "len: " ret ))
             (ret ret)
+    )),
+    
+    progargs-to-index: (λ args Vector<String>()
+        (with key "" ret Index<String String>()
+        (for s in args do
+            (if (starts-with s "-")
+                (= key (sub s 1)) (insert ret (cp key) "") 
+            elsif (size key)
+                (set-el ret key s)
+            else (ret ret)
+            ))
+        (ret ret)
     ))
 }

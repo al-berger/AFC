@@ -60,7 +60,6 @@ class Fragment: {
   import: "Utils",
   length: Double(0.0),
   pause: Double(0.0),
-  fragGap: Double(0.0),
   plays: Vector<String>(),
 
   playObjs: Vector<Play>(),
@@ -97,15 +96,19 @@ class Stream: {
   fragment: String(),
   freq: Int(1),
   loop: Int(0),
+  fragGap: Double(0.0),
 
   files: Vector<String>(),
   curFile: String(),
   curFileIdx: Int(0),
   curFileLen: Double(-1.0),
+  curPos: Double(0.0),
+  freqCnt: 0,
   fragObj: Fragment(),
   finished: false,
+  skipped: false,
 
-    access allow: { finished: [Flow], name: [Flow] },
+    access allow: { finished: [Flow], name: [Flow], skipped: [Flow] },
 
   init: (λ objs Index<String Vector<Object>>()
     (with dir Directory() 
@@ -123,10 +126,10 @@ class Stream: {
 
   play: (λ thr_done Bool()
     (log-debug "Stream " name " started playing ")
-    (log-debug "   startPos: " String( startPos "; curFileLen: " curFileLen ))
-    (if (> startPos curFileLen) 
-        (log-debug "   startPos > curFileLen: " 
-            String( startPos "; " curFileLen "; curFileIdx: " curFileIdx ))
+    (log-debug "   curPos: " String( curPos "; curFileLen: " curFileLen ))
+    (if (> curPos curFileLen) 
+        (log-debug "   curPos > curFileLen: " 
+            String( curPos "; " curFileLen "; curFileIdx: " curFileIdx ))
         (if (< curFileIdx (size files) )
             (= curFile (get files curFileIdx))
             (log-info String("Stream " name ": current file: " curFile ))
@@ -134,18 +137,27 @@ class Stream: {
             (= curFileLen -1.0)
         else (= curFileLen 0.0)
             (= curFile "")
-            (= startPos 0.0)
+            (= curPos 0.0)
     ))
     (if (not curFile)
         (log-info "The stream " name " has finished")
         (= finished true) (= thr_done true) (ret)
     )
-    (if (< curFileLen 0.0)
-        (= curFileLen (get-file-len curFile))
-        (= startPos 0.0)
+    (+= freqCnt 1)
+    (if (not (mod freqCnt freq))
+        (if (< curFileLen 0.0)
+            (= curFileLen (get-file-len curFile))
+            (= curPos startPos)
+        else (+= curPos fragGap)
+        )
+        (log-debug "   curFile: " curFile String( "; curPos: " curPos ))
+        (play fragObj curFile curPos thr_done)
+        (= skipped false)
+    else 
+        (set thr_done true)
+        (= skipped true)
+        (log-info String("Stream " name ": play count: " freqCnt " - skipping"))
     )
-    (log-debug "   curFile: " curFile String( "; startPos: " startPos ))
-    (play fragObj curFile startPos thr_done)
   )
 }
 
@@ -182,8 +194,9 @@ import: "Stream",
                 (while (not thr_done)
                     (sleep 1000))
                 (log-debug "flow: THR_DONE is SET")
-                (log-debug String( "flow: began pause: " (get delays @idx)) )
-                (sleep (* (get delays @idx) 1000.0))
+                (if (not st.skipped)
+                    (log-debug String( "flow: began pause: " (get delays @idx)) )
+                    (sleep (* (get delays @idx) 1000.0)))
             )
             (log-debug "flow: stream's cycle ended " st.name)
         )
@@ -196,14 +209,29 @@ MainModule: {
 import: "Config",
 import: "Utils",
 
+// the flow object
 flowObj: Flow(),
+
+// objects from the user flowlist
 objs: Index<String Vector<Object>>(),
+
 flowName: "",
 
 _start: (λ fname String() cmd String()
     (log-debug "AFC started")
-    (if (> @numArgs 1) (set flowName (get @progArgs 0))
-    else (set flowName defaultFlow))
+
+//-- processing command line arguments
+
+    (if (== @numArgs 1) (set flowName defaultFlow)
+    elsif (== @numArgs 2) (set FLfile (get @progArgs 0))
+    else (with ind (progargs-to-index @progArgs)  
+            (log-info "arguments: " String(ind))
+            (= FLfile (snd (get-val ind "FLfile" FLfile)))
+            (= flowName (snd (get-val ind "flow" defaultFlow)))
+    ))
+
+    (log-info String("FLfile: " FLfile "; flow: " flowName))
+
     (rebind objs (group-by 
                 (read-tsd-file FLfile) 
                 (λ ob Object() -> String() 
@@ -212,5 +240,6 @@ _start: (λ fname String() cmd String()
     (init flowObj objs)
     (play flowObj)
 )
+
 
 }

@@ -70,7 +70,7 @@ This flow will consist of 5 min fragments, played every 30 min.
 
 ## Dependencies
 
-1. AFC is written in **Transd** programming language and needs a Transd interpreter for running.The FREND command line Transd interpreter can be downloaded [here](https://github.com/transd-lang/frend).
+1. AFC is written in **Transd** programming language and needs a Transd interpreter for running.The TREE3 command line Transd interpreter can be downloaded [here](https://github.com/transd-lang/tree3).
 
 2. AFC plays files via "**SoX**" command line audio program, which is needed to be [downloaded](https://sourceforge.net/projects/sox/files/sox/) in order for AFC to work.
 
@@ -79,15 +79,15 @@ This flow will consist of 5 min fragments, played every 30 min.
 Once you have defined the details of your audio flow in a flowlist file, you can start to play it. To play the flow, type the following command on the command line:
 
 ```
-frend <full/path/to>/"AFC.td"
+tree3 <full/path/to>/"AFC.td"
 ```
 
-`frend` - is the name of the FREND interpreter's executable file, `"AFC.td"` - is a program file from this distribution. If directories with these files are not in the system PATH list, the file names need to be typed with the full paths.
+`tree3` - is the name of the TREE3 interpreter's executable file, `"AFC.td"` - is a program file from this distribution. If directories with these files are not in the system PATH list, the file names need to be typed with the full paths.
 
 The above command will start the flow that has the default name in the flowlist file. To start a flow with other name, the command should be typed as follows:
 
 ```
-frend <full/path/to>/ "AFC.td" <flow_name>
+tree3 <full/path/to>/ "AFC.td" <flow_name>
 ```
 
 ## Flow configuration
