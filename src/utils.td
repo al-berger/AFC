@@ -13,11 +13,11 @@ public module Utils:
     import: "Config::soxPath",
     import: "Config::verbosity",
 
-    log-info: (λ s1 String() s2 String() s3 String()
+    log-info: (λ const s1 String() const s2 String() const s3 String()
         (if (>= verbosity 2) (lout s1 s2 s3))
     ),
 
-    log-debug: (λ s1 String() s2 String() s3 String()
+    log-debug: (λ const s1 String() const s2 String() const s3 String()
         (if (>= verbosity 3) (lout s1 s2 s3))
     ),
 

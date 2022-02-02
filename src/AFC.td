@@ -220,7 +220,7 @@ flowName: "",
 _start: (λ fname String() cmd String()
     (log-debug "AFC started")
 
-//-- processing command line arguments
+//-- process command line arguments
 
     (if (== @numArgs 1) (set flowName defaultFlow)
     elsif (== @numArgs 2) (set FLfile (get @progArgs 0))
@@ -232,12 +232,23 @@ _start: (λ fname String() cmd String()
 
     (log-info String("FLfile: " FLfile "; flow: " flowName))
 
+// -- read the flowlist definition objects from the flowlist file
+
     (rebind objs (group-by 
                 (read-tsd-file FLfile) 
                 (λ ob Object() -> String() 
                     (get-String ob "name"))))
+
+// -- create the root of hierarchy - the flow object
+
     (load-from-object flowObj (get (snd (get objs flowName)) 0))
+
+// -- init the flow object
+
     (init flowObj objs)
+
+// -- start flow
+
     (play flowObj)
 )
 
