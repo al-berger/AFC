@@ -43,7 +43,7 @@ public module Utils:
     
     progargs-to-index: (λ args Vector<String>()
         (with key "" ret Index<String String>()
-        (for s in args do
+        (for s in Range(in: args 1 -0) do
             (if (starts-with s "-")
                 (= key (sub s 1)) (insert ret (cp key) "") 
             elsif (size key)

@@ -4,7 +4,7 @@ Audio Flow Combiner
 
 MIT License
 
-Copyright (c) 2021 Albert Berger
+Copyright (c) 2021-2022 Albert Berger
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 --------------------
-Author: Albert Berger [/com/gmail/alberger]
-Github: https://github.com/al-berger/AFC
+
+Github:        https://github.com/al-berger/AFC
+Version:       0.51 (works with TREE3 v0.2-504 and higher)
+Last edited:   Mon, 19 Sep 2022 10:12
 */
 
 #lang transd
@@ -44,10 +46,10 @@ class Play: {
   init: (λ objs Index<String Vector<Object>>()
   ),
 
-  play: (λ fileName String() startPos Double() thr_done Bool() 
+  play: (λ yfileName String() startPos Double() thr_done Bool() 
             length Double()
     (log-debug "Play " name " started playing ")
-    (with cmd String( soxPath " -q \"" fileName
+    (with cmd String( soxPath " -q \"" yfileName
             "\" -d trim " startPos " " length " tempo " tempo 
             " fade t " fadeIn " -0 " fadeOut " vol " volume)
         (log-debug "cmd: " cmd)
@@ -67,7 +69,7 @@ class Fragment: {
   init: (λ objs Index<String Vector<Object>>()
     (for plname in plays do
         (append playObjs Play())
-        (load-from-object (back playObjs) (get (snd (get objs plname)) 0))
+        (load-from-object (back playObjs) (get (get objs plname) 0))
     )
     (*= pause 1000.0)
   ),
@@ -116,7 +118,7 @@ class Stream: {
         (= files (files dir)))
     (if (size files) 
         (= curFile (get files 0))
-        (load-from-object fragObj (get (snd (get objs fragment)) 0))
+        (load-from-object fragObj (get (get objs fragment) 0))
         (init fragObj objs)
         (log-info String("Stream " name ": file list:" files))
     else
@@ -144,12 +146,16 @@ class Stream: {
         (= finished true) (= thr_done true) (ret)
     )
     (+= freqCnt 1)
-    (if (not (mod freqCnt freq))
+
         (if (< curFileLen 0.0)
             (= curFileLen (get-file-len curFile))
             (= curPos startPos)
-        else (+= curPos fragGap)
+        else (if (> fragGap 0.0) (+= curPos fragGap)
+              else (if (> curPos (abs fragGap)) (+= curPos fragGap)))
         )
+
+    (if (not (mod freqCnt freq))
+
         (log-debug "   curFile: " curFile String( "; curPos: " curPos ))
         (play fragObj curFile curPos thr_done)
         (= skipped false)
@@ -175,7 +181,7 @@ import: "Stream",
     (for streamName in streams do
         (append streamObjs Stream())
         (load-from-object (back streamObjs) 
-                (get (snd (get objs streamName)) 0))
+                (get (get objs streamName) 0))
         (init (back streamObjs) objs)
     )
   ),
@@ -217,7 +223,7 @@ objs: Index<String Vector<Object>>(),
 
 flowName: "",
 
-_start: (λ fname String() cmd String()
+_start: (λ 
     (log-debug "AFC started")
 
 //-- process command line arguments
@@ -226,8 +232,8 @@ _start: (λ fname String() cmd String()
     elsif (== @numArgs 2) (set FLfile (get @progArgs 0))
     else (with ind (progargs-to-index @progArgs)  
             (log-info "arguments: " String(ind))
-            (= FLfile (snd (get-val ind "FLfile" FLfile)))
-            (= flowName (snd (get-val ind "flow" defaultFlow)))
+            (= FLfile (get-val ind "FLfile" FLfile))
+            (= flowName (get-val ind "flow" defaultFlow))
     ))
 
     (log-info String("FLfile: " FLfile "; flow: " flowName))
@@ -241,7 +247,7 @@ _start: (λ fname String() cmd String()
 
 // -- create the root of hierarchy - the flow object
 
-    (load-from-object flowObj (get (snd (get objs flowName)) 0))
+    (load-from-object flowObj (get (get objs flowName) 0))
 
 // -- init the flow object
 
@@ -251,6 +257,4 @@ _start: (λ fname String() cmd String()
 
     (play flowObj)
 )
-
-
 }

@@ -35,7 +35,7 @@ public module Config:
         (if (not FLfile)
             (with rootdir (substr @sourceFile from: 0 to: after: last: "/")
                 _s (if (eq @OS_Type "Windows") "../flowlists/flowlist.tsd" 
-                    else "../flowlists/lo_and_fo_l.tsd")
+                    else "../flowlists/flowlist_lin.tsd")
                 (= FLfile (+ rootdir _s))
         ))
     )
