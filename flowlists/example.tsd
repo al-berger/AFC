@@ -1,0 +1,62 @@
+"play1": {
+  class: "Play",
+  volume: 0.5,
+  tempo: 0.75,
+  fadeIn: 1.0,
+  fadeOut: 2.0
+}
+
+"play2": {
+  class: "Play",
+  volume: 0.5,
+  tempo: 1.0,
+  fadeIn: 1.0,
+  fadeOut: 2.0
+}
+
+"play3": {
+  class: "Play",
+  volume: 0.2,
+  tempo: 1,
+  fadeIn: 0,
+  fadeOut: 2
+}
+
+"read": {
+  class: "Fragment",
+  length: 30.0,
+  pause: 5.0,
+  fragGap: 10.0,
+  plays: ["play1", "play2"]
+}
+
+"music": {
+  class: "Fragment",
+  length: 300.0,
+  pause: 10.0,
+  fragGap: 1.0,
+  plays: ["play3"]
+}
+
+"lang": {
+  class: "Stream",
+  rootDir: "G:/Spanish",
+  filePatt: ".*podcast Learn Spanish.*.ogg",
+  fragment: "read",
+  freq: 1
+}
+
+"music": {
+  class: "Stream",
+  rootDir: "F:/classic/Greatest Hits",
+  filePatt: ".*Piano.*\\.mp3",
+  fragment: "music",
+  freq: 3
+}
+
+"flow1": {
+  class: "Flow",
+  streams: ["music", "lang"],
+  async: false,
+  delays: [10.0, 20.0]
+}
